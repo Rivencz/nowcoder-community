@@ -3,6 +3,7 @@ package com.nowcoder.community;
 import com.nowcoder.community.dao.*;
 import com.nowcoder.community.entity.DiscussPost;
 import com.nowcoder.community.entity.User;
+import com.nowcoder.community.util.MailClient;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +14,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.test.context.ContextConfiguration;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
 import javax.sql.DataSource;
 import java.util.Date;
@@ -122,4 +125,32 @@ class CommunityApplicationTests implements ApplicationContextAware {
         logger.error("error test");
     }
 
+    @Autowired
+    MailClient mailClient;
+
+    /**
+     * MailClient发送邮件工具类测试
+     */
+    @Test
+    public void sendTextMail() {
+        mailClient.sendMail("fiorac@163.com", "MailTest", "我渴望，有价值的对手！");
+    }
+
+    //模板引擎
+    @Autowired
+    TemplateEngine templateEngine;
+
+    @Test
+    public void sendHtmlMail(){
+//        首先创建一个Context对象存储一些信息
+        Context context = new Context();
+        context.setVariable("username", "没错吧！");
+
+//        传入执行的页面路径，不用带后缀名，以及一些自己添加的模板信息
+        String content = templateEngine.process("mail/demo", context);
+        System.out.println(content);
+
+//        最后仍旧使用发送邮件类的sendMail方法，将刚才的页面内容传入
+        mailClient.sendMail("2601534040@qq.com", "HTMLTest", content);
+    }
 }

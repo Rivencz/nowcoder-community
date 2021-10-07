@@ -18,6 +18,12 @@
     </properties>
     <dependencies>
 
+        <!--邮箱操作需要的依赖-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!--整合Mybatis相关依赖,一下共三个-->
         <dependency>
             <groupId>org.mybatis.spring.boot</groupId>
