@@ -151,6 +151,6 @@ class CommunityApplicationTests implements ApplicationContextAware {
         System.out.println(content);
 
 //        最后仍旧使用发送邮件类的sendMail方法，将刚才的页面内容传入
-        mailClient.sendMail("2601534040@qq.com", "HTMLTest", content);
+        mailClient.sendMail("xxx@xxx.com", "HTMLTest", content);
     }
 }
