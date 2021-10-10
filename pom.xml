@@ -18,6 +18,12 @@
     </properties>
     <dependencies>
 
+        <!--导入Java工具类包，用于执行字符串是否为空等常见操作-->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+
         <!--邮箱操作需要的依赖-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
