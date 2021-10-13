@@ -1,8 +1,12 @@
 package com.nowcoder.community.controller;
 
+import com.google.code.kaptcha.Producer;
 import com.nowcoder.community.entity.User;
 import com.nowcoder.community.service.UserService;
 import com.nowcoder.community.util.CommunityConstant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -10,13 +14,24 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 
+import javax.imageio.ImageIO;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.Map;
 
 @Controller
 public class LoginController implements CommunityConstant {
 
+    public static final Logger logger = LoggerFactory.getLogger(LoginController.class);
+
     @Autowired
     UserService userService;
+
+    @Autowired
+    Producer producer;
 
     /**
      * 直接将注册界面返回
@@ -87,6 +102,27 @@ public class LoginController implements CommunityConstant {
             model.addAttribute("target", "/index");
         }
         return "site/operate-result";
+    }
+
+    @GetMapping("/kaptcha")
+    public void getKaptcha(HttpServletResponse response, HttpSession session){
+//        根据我们在配置类中配置的属性生成一个字符串形式的验证码
+        String text = producer.createText();
+//        然后将它转换成图片样式
+        BufferedImage image = producer.createImage(text);
+
+//        因为我们登录的时候还需要进行确认，所以将验证码文本放入session中
+        session.setAttribute("kaptcha", text);
+
+//        设置输出的内容格式
+        response.setContentType("image/png");
+
+        try {
+            ServletOutputStream outputStream = response.getOutputStream();
+            ImageIO.write(image, "png", outputStream);
+        } catch (IOException e) {
+            logger.error("响应验证码失败！" + e.getMessage());
+        }
     }
 }
 

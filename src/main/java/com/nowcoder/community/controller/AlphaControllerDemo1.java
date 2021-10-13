@@ -5,6 +5,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -68,5 +71,41 @@ public class AlphaControllerDemo1 {
         list.add(map);
 
         return list;
+    }
+
+    @GetMapping("/cookie/set")
+    @ResponseBody
+    public String cookieSet(HttpServletResponse response){
+        Cookie cookie = new Cookie("name", "riven");
+//        设置生效路径和存活时间
+        cookie.setPath("/community/alpha");
+        cookie.setMaxAge(60 * 60);
+//        将cookie通过响应头添加给服务器端
+        response.addCookie(cookie);
+        return "cookie test";
+    }
+
+    @GetMapping("/cookie/get")
+    @ResponseBody
+    public String cookieGet(@CookieValue("name") String value){
+        System.out.println(value);
+        return value;
+    }
+
+    @GetMapping("/session/set")
+    @ResponseBody
+    public String sessionSet(HttpSession httpSession){
+        httpSession.setAttribute("Id", "111222333");
+        httpSession.setAttribute("name", "德玛西亚！");
+        return "Session set";
+    }
+
+    @GetMapping("/session/get")
+    @ResponseBody
+    public String sessionGet(HttpSession session){
+        System.out.println(session.getAttribute("Id"));
+        System.out.println(session.getAttribute("name"));
+        System.out.println(session.getAttribute("ss"));
+        return "session Get";
     }
 }

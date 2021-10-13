@@ -18,8 +18,7 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import javax.sql.DataSource;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @SpringBootTest
 
@@ -153,4 +152,6 @@ class CommunityApplicationTests implements ApplicationContextAware {
 //        最后仍旧使用发送邮件类的sendMail方法，将刚才的页面内容传入
         mailClient.sendMail("xxx@xxx.com", "HTMLTest", content);
     }
+
+
 }
