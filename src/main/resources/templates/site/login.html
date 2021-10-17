@@ -1,4 +1,5 @@
 <!doctype html>
+<!--suppress ALL -->
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
 	<meta charset="utf-8">
@@ -70,6 +71,7 @@
 							<input type="text" th:class="|form-control ${usernameMsg!=null?'is-invalid':''}|"
 								   th:value="${param.username}"
 								   id="username" name="username" placeholder="请输入您的账号!" required>
+							<!--下面这一行是否显示是根据是否，也就是看usernameMsg是否为空-->
 							<div class="invalid-feedback" th:text="${usernameMsg}">
 								该账号不存在!
 							</div>

@@ -2,6 +2,7 @@ package com.nowcoder.community;
 
 import com.nowcoder.community.dao.*;
 import com.nowcoder.community.entity.DiscussPost;
+import com.nowcoder.community.entity.LoginTicket;
 import com.nowcoder.community.entity.User;
 import com.nowcoder.community.util.MailClient;
 import org.junit.jupiter.api.Test;
@@ -153,5 +154,23 @@ class CommunityApplicationTests implements ApplicationContextAware {
         mailClient.sendMail("xxx@xxx.com", "HTMLTest", content);
     }
 
+    @Autowired
+    LoginTicketMapper loginTicketMapper;
 
+    @Test
+    public void LoginTicketMapperTest(){
+        LoginTicket loginTicket = new LoginTicket();
+        loginTicket.setUserId(101);
+        loginTicket.setTicket("abc");
+        loginTicket.setStatus(0);
+        loginTicket.setExpired(new Date(System.currentTimeMillis() + 1000 * 60 * 10));
+
+//        int i = loginTicketMapper.insertLoginTicket(loginTicket);
+
+        LoginTicket selectByTicket = loginTicketMapper.selectByTicket("abc");
+        System.out.println(selectByTicket);
+        loginTicketMapper.updateStatus("abc", 0);
+        selectByTicket = loginTicketMapper.selectByTicket("abc");
+        System.out.println(selectByTicket);
+    }
 }

@@ -1,6 +1,8 @@
 package com.nowcoder.community.service;
 
+import com.nowcoder.community.dao.LoginTicketMapper;
 import com.nowcoder.community.dao.UserMapper;
+import com.nowcoder.community.entity.LoginTicket;
 import com.nowcoder.community.entity.User;
 import com.nowcoder.community.util.CommunityConstant;
 import com.nowcoder.community.util.CommunityUtil;
@@ -9,6 +11,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
@@ -29,6 +33,12 @@ public class UserService implements CommunityConstant {
 
     @Autowired
     TemplateEngine templateEngine;
+
+    /**
+     * LoginTicket类相关的三个方法的service层实现
+     */
+    @Autowired
+    LoginTicketMapper loginTicketMapper;
 
     //    网站域名
     @Value("${community.path.domain}")
@@ -124,6 +134,7 @@ public class UserService implements CommunityConstant {
 
     /**
      * 激活用户业务方法，先根据用户id查询出当前用户的status，防止重复激活，然后再根据激活码判断是否可以激活
+     *
      * @param userId
      * @param code
      * @return
@@ -139,6 +150,69 @@ public class UserService implements CommunityConstant {
         } else {
             return ACTIVATION_FAILURE;
         }
+    }
+
+    /**
+     * 登录业务，因为可能会有很多不同的业务，因此返回一个map集合，可以记录各种信息
+     *
+     * @param username
+     * @param password
+     * @param expiredseconds 注意必须是long类型，否则后面*1000会造成数据溢出
+     * @return
+     */
+    public Map<String, Object> login(String username, String password, long expiredseconds) {
+        Map<String, Object> map = new HashMap<>();
+        //首先检查用户名和密码是否为空
+        if (StringUtils.isBlank(username)) {
+            map.put("usernameMsg", "用户名不能为空！");
+            return map;
+        }
+        if (StringUtils.isBlank(password)) {
+            map.put("passwordMsg", "密码不能为空！");
+            return map;
+        }
+        //然后检查用户名和密码是否合格
+        User user = userMapper.selectByName(username);
+        if (user == null) {
+            map.put("usernameMsg", "该用户不存在！");
+            return map;
+        }
+        //检查该用户是否未激活
+        if (user.getStatus() == 0) {
+            map.put("usernameMsg", "该账号未激活！");
+            return map;
+        }
+        //账户存在了，检查对应的密码是否正确
+        password = CommunityUtil.md5(password + user.getSalt());
+        if (!user.getPassword().equals(password)) {
+            map.put("passwordMsg", "密码错误！");
+            return map;
+        }
+
+        //所有都检查完了，生成一个登录凭证
+        LoginTicket loginTicket = new LoginTicket();
+        loginTicket.setUserId(user.getId());
+        //0表示有效登录，1表示退出
+        loginTicket.setStatus(0);
+        loginTicket.setTicket(CommunityUtil.generateUUID());
+        loginTicket.setExpired(new Date(System.currentTimeMillis() + expiredseconds * 1000));
+
+        loginTicketMapper.insertLoginTicket(loginTicket);
+
+//      将这个登录凭证字符串放入map，用这个ticket来寻找对应的登录凭证，从而可以根据凭证中的userid找到对应的用户
+        map.put("ticket", loginTicket.getTicket());
+
+        return map;
+    }
+
+    /**
+     * 退出登录，根据传入的ticket，找到对应的登录凭证，修改状态status即可
+     *
+     * @param ticket
+     * @return
+     */
+    public void logout(String ticket) {
+        loginTicketMapper.updateStatus(ticket, 1);
     }
 
 }

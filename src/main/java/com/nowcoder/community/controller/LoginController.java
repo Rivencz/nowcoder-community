@@ -4,22 +4,26 @@ import com.google.code.kaptcha.Producer;
 import com.nowcoder.community.entity.User;
 import com.nowcoder.community.service.UserService;
 import com.nowcoder.community.util.CommunityConstant;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import javax.imageio.ImageIO;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 @Controller
@@ -33,6 +37,9 @@ public class LoginController implements CommunityConstant {
     @Autowired
     Producer producer;
 
+    @Value("${server.servlet.context-path}")
+    private String contextPath;
+
     /**
      * 直接将注册界面返回
      *
@@ -44,13 +51,62 @@ public class LoginController implements CommunityConstant {
     }
 
     /**
-     * 返回登录界面
+     * 从主页面点击登录时，返回登录界面
      *
      * @return
      */
     @GetMapping("/login")
     public String loginPage() {
         return "site/login";
+    }
+
+
+    /**
+     * 登录界面的处理逻辑，因为要处理一个表单，所以请求方式为post，以此和另一个login方法区分
+     *
+     * @param model
+     * @param username
+     * @param password
+     * @param code
+     * @param rememberme 是否记住该用户，如果记住，那么它的登录凭证存活时间就会变长
+     * @param session    我们需要确认用户输入的验证码是否正确，而当验证码生成时存放在了session中
+     * @param response   将登录凭证存放在一个cookie中
+     * @return
+     */
+    @PostMapping("/login")
+    public String login(Model model, String username, String password, String code,
+                        boolean rememberme, HttpSession session, HttpServletResponse response) {
+        // 首先判断验证码是否有误，如果验证码错误直接返回到登录界面
+        String kaptcha = (String) session.getAttribute("kaptcha");
+        // 如果验证码为空或者输入的和生成的验证码不相同，直接返回到登录界面
+        if (StringUtils.isBlank(kaptcha) || StringUtils.isBlank(code) || !kaptcha.equalsIgnoreCase(code)) {
+            model.addAttribute("codeMsg", "验证码错误！");
+            return "site/login";
+        }
+
+        //下面根据用户是否点击记住我来设置过期时间，这两个变量从工具类中取
+        int expiredSeconds = rememberme ? REMEMBER_EXPIRED_SECONDS : DEFAULT_EXPIRED_SECONDS;
+        //调用登录的业务方法
+        Map<String, Object> map = userService.login(username, password, expiredSeconds);
+        //如果登录凭证不是空，说明登录成功了
+        if (map.containsKey("ticket")) {
+            // 登录成功，重定向到首页，并且将登录凭证放入到cookie中
+            String ticket = (String) map.get("ticket");
+            Cookie cookie = new Cookie("ticket", ticket);
+            // 设置cookie的生效路径，默认整个项目
+            cookie.setPath(contextPath);
+            // 设置cookie的失效时间
+            cookie.setMaxAge(expiredSeconds);
+            response.addCookie(cookie);
+            // 重定向到首页
+            return "redirect:/index";
+        } else {
+            // 否则，说明出现了错误，将所有可能的错误信息都放到map中
+            model.addAttribute("usernameMsg", map.get("usernameMsg"));
+            model.addAttribute("passwordMsg", map.get("passwordMsg"));
+            // 返回到登录界面
+            return "site/login";
+        }
     }
 
     /**
@@ -105,7 +161,7 @@ public class LoginController implements CommunityConstant {
     }
 
     @GetMapping("/kaptcha")
-    public void getKaptcha(HttpServletResponse response, HttpSession session){
+    public void getKaptcha(HttpServletResponse response, HttpSession session) {
 //        根据我们在配置类中配置的属性生成一个字符串形式的验证码
         String text = producer.createText();
 //        然后将它转换成图片样式
@@ -123,6 +179,18 @@ public class LoginController implements CommunityConstant {
         } catch (IOException e) {
             logger.error("响应验证码失败！" + e.getMessage());
         }
+    }
+
+    /**
+     * 退出用户，修改目标status即可
+     * @param ticket
+     * @return
+     */
+    @GetMapping("/logout")
+    public String logout(@CookieValue("ticket") String ticket){
+        userService.logout(ticket);
+        //重定向，默认返回的是对应路径的GET请求
+        return "redirect:/login";
     }
 }
 
